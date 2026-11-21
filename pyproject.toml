@@ -31,10 +31,12 @@ classifiers = [
 # e4cc2d7, hvor oomtm's egne afhaengigheder stadig stod med ">=".
 dependencies = [
     "OpenOrchestrator == 3.*",
-    # [pdf]: mappens filer laves om med LibreOffice/Pillow (oomtm.pdf), og
-    # mails laeses med extract-msg. LibreOffice installeres uden administrator
-    # (msiexec /a) ved foerste koersel, ~350 MB, én gang pr. robotmaskine.
-    "oomtm[pdf] @ git+https://github.com/mtm-aarhus/oomtm.git@e27ec606f9d3fa905bed7bd704d98d2f4ff3e903",
+    # [pdf]: mappens filer laves om med oomtm.convert - WeasyPrint til mails,
+    # HTML, tekst og CSV, LibreOffice til Office, Pillow til billeder. Begge
+    # motorer installeres uden administrator ved foerste koersel, én gang pr.
+    # robotmaskine (LibreOffice ~350 MB, WeasyPrints biblioteker ~30 MB).
+    # b386b55: oomtm.convert med WeasyPrint og genbrugte LibreOffice-profiler.
+    "oomtm[pdf] @ git+https://github.com/mtm-aarhus/oomtm.git@b386b557439ae47228325f647d96750e41a6ffd8",
     "requests == 2.34.2",
     "Pillow == 10.4.0",
 ]

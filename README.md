@@ -9,15 +9,12 @@ KontAKT queues one element per file, when a Word document, spreadsheet, presenta
 For one uploaded file:
 
 1. Downloads it from KontAKT's file store (`GET /api/v1/cases/{id}/documents/{doc_id}/content`).
-2. Converts it with the shared [`oomtm`](https://github.com/mtm-aarhus/oomtm) library (`oomtm.pdf.convert_to_pdf`): LibreOffice for Office and text, Pillow for images, HTML rendering for e-mails. The same engine KontAKTGOToPDF falls back to.
-3. Uploads the PDF onto the **same** document (`POST .../store?kind=pdf`), which records name, size, SHA-256 and status `ready`.
+2. Converts it with the shared [`oomtm`](https://github.com/mtm-aarhus/oomtm) library (`oomtm.convert`), the same way every KontAKT PDF robot does: WeasyPrint for e-mails, HTML, text and CSV, LibreOffice for Office files, Pillow for images (every page of a multi-page TIFF).
+3. Uploads the PDF onto the **same** document (`POST .../store?kind=pdf`), which records name, size, SHA-256, status `ready` and a note for the caseworker when the PDF doesn't show everything.
 
-The uploaded original is only replaced once there is a real PDF (`%PDF-`). If the file can't be converted, the robot reports `skipped` with a reason to `POST .../file`, and KontAKT keeps the original and delivers it as it is. Nothing can be lost here; at worst the file isn't screened.
+The uploaded original is only replaced once there is a real PDF. If the file can't be converted, the robot reports `skipped` with oomtm's reason to `POST .../file`, and KontAKT keeps the original and delivers it as it is. Nothing can be lost here; at worst the file isn't screened.
 
-Two cases are deliberately **not** converted, because the PDF would contain less than the original:
-
-- **E-mails with attachments.** `oomtm.pdf` only lists the attachment names. Inline images (signature logos, pasted screenshots) don't count, since they are part of the mail's HTML.
-- **Multi-page TIFF scans** are converted page by page here, because `oomtm.pdf.image_to_pdf` only keeps the first page.
+**E-mails with attachments** become a PDF of the mail itself: header, text and the images inside the text (signature logos, pasted screenshots). The real attachments aren't in the PDF; they're listed in the mail's header as "Vedhæftet", and the note on the document asks the caseworker to add them to the mappe as separate files. Notes also carry oomtm's warnings about what an Office file has that the PDF doesn't show (tracked changes, comments, hidden sheets).
 
 ## Input (one file)
 
@@ -38,4 +35,4 @@ Two cases are deliberately **not** converted, because the PDF would contain less
 
 ## Dependencies
 
-`oomtm[pdf]` (pinned to a commit), `requests`, `Pillow` (also needed by `error_screenshot.py`). LibreOffice is unpacked on the worker without admin rights on the first run (~350 MB, once per machine).
+`oomtm[pdf]` (pinned to a commit), `requests`, `Pillow` (also needed by `error_screenshot.py`). On the first run, `reset.open_all` makes oomtm install its engines without admin rights, once per machine: LibreOffice (~350 MB) and WeasyPrint's Windows libraries (~30 MB), both from [oomtm_setup](https://github.com/mtm-aarhus/oomtm_setup) first.

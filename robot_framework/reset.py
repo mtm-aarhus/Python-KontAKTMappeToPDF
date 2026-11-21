@@ -8,6 +8,7 @@ of reconnecting for every single document.
 
 import requests
 from OpenOrchestrator.orchestrator_connection.connection import OrchestratorConnection
+from oomtm import convert, engines
 
 
 class Client:
@@ -43,20 +44,28 @@ def clean_up(orchestrator_connection: OrchestratorConnection) -> None:
 
 
 def close_all(orchestrator_connection: OrchestratorConnection) -> None:
-    """Gracefully close all applications used by the robot."""
+    """Gracefully close all applications used by the robot: oomtm's WeasyPrint
+    process (it also closes by itself when the robot exits)."""
     orchestrator_connection.log_trace("Closing all applications.")
+    engines.close_workers()
 
 
 def kill_all(orchestrator_connection: OrchestratorConnection) -> None:
     """Forcefully close all applications used by the robot.
 
-    LibreOffice runs as a child process per conversion with its own throwaway
-    profile (oomtm.pdf.office_to_pdf) and a timeout, so there is nothing left
-    running between documents to kill here."""
+    LibreOffice runs as a child process per conversion, in a profile only it
+    uses, with a timeout that kills its whole process tree (oomtm.engines), so
+    there is nothing left running between documents to kill here."""
     orchestrator_connection.log_trace("Killing all applications.")
 
 
 def open_all(orchestrator_connection: OrchestratorConnection) -> Client:
-    """Open all connections used by the robot and return them as a :class:`Client`."""
+    """Open all connections used by the robot and return them as a :class:`Client`.
+
+    Also makes sure oomtm's engines (WeasyPrint and LibreOffice) are on the
+    machine, installing them without admin if not - once per machine, so a
+    missing engine shows up here and not halfway through a case."""
     orchestrator_connection.log_trace("Opening KontAKT connection.")
+    motorer = convert.ensure_engines(log=orchestrator_connection.log_info)
+    orchestrator_connection.log_info(f"PDF-motorer klar: {motorer}")
     return Client(orchestrator_connection)
